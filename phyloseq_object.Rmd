@@ -1,0 +1,1257 @@
+---
+title: "Phyloseq, lulu, Funguild"
+author: "Jacob J. Hackman"
+date: "2023-02-23"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    toc: yes
+    toc_float: yes
+---
+
+
+
+1. Load in original taxa table, asv table and sample list 
+
+11065 asvs
+2. Create a phyloseq object with the three with taxa table, asv table, and sample list
+
+3. run ASV table through lulu curation and remove any asv's from created phyloseq object. 
+7933 asvs
+4. export taxa table from pruned phyloseq object 
+
+5. run FunGuild taxonomic assignment on exported taxa table
+2241 asvs
+6. re-create phyloseq object with new pruned taxa table. 
+
+THe top 6 steps are only until "FUNTAX" has been created around line 282. Everything
+from then on is analysis. 
+
+Guild Information from FunGuild
+
+Total ECM out of 1966 asvs: 110
+Total Arbuscular : 74
+Total ericoid: 17
+Total non-mycorrhizal:
+Total Saprotroph:1303
+Total Wood Saprotroph: 374
+
+#####1. Load in original taxa table, asv table and sample list 
+# Load Packages and Files
+```{r, message=FALSE, warning=FALSE}
+#packages
+library(tidyverse)
+library(phyloseq)
+library(readr)
+library(jsonlite)
+library(dplyr)
+library(vegan)
+library(microbiome); packageVersion("microbiome")
+## [1] '1.12.0'
+library(ggplot2); packageVersion("ggplot2")
+## [1] '3.3.3'
+library(vegan); packageVersion("vegan")
+## [1] '2.5.7'
+library(tidyverse); packageVersion("tidyverse")
+## [1] '1.3.0'
+library(compositions); packageVersion("compositions")
+## [1] '2.0.1'
+library(DESeq2); packageVersion("DESeq2")
+## [1] '1.30.0'
+library(rmarkdown); packageVersion("rmarkdown")
+## [1] '2.6'
+library(knitr); packageVersion("knitr")
+## [1] '1.30'
+library(devtools); packageVersion("devtools")
+#files
+library(DESeq2); packageVersion("DESeq2")
+## [1] '1.30.0'
+library(RRPP); packageVersion("RRPP")
+## [1] '0.6.2'
+library(vegan); packageVersion("vegan")
+## [1] '2.5.7'
+library(ggplot2); packageVersion("ggplot2")
+## [1] '3.3.3'
+
+## [1] '0.4.0'
+library(mvnormtest); packageVersion("mvnormtest")
+library(compositions)
+library(knitr)
+library(microbiome)
+library(phyloseq)
+library(RColorBrewer)
+library(reshape2)
+library(ggrepel)
+library(devtools)
+library(MicEco); packageVersion("MicEco")
+library(MicEco)
+library(stats)
+library(indicspecies)
+```
+
+```{r}
+Sam_list <- read_csv("SAM_LIST.csv") %>% 
+  column_to_rownames(var="...1")
+seqtab.nochim <- read_csv("seqtab.nochim.asv.csv") %>%
+  column_to_rownames(var="...1")
+taxa <- read_csv("taxa_asv.csv") %>%
+  column_to_rownames(var="...1") %>%
+  as.matrix  # converting to matrix here to prevent phyloseq from altering the ASV names down the line which was causing the error
+```
+  Used tidyverse `read_csv()` instead of base R `read.csv()` as base R `read.csv()` was slow and kept freezing with the large data frames.
+
+# View table structures
+## Sample metadata
+```{r}
+head(Sam_list)
+```
+## ASV table
+```{r}
+seqtab.nochim[1:3,1:3]
+```
+  Note that taxa are columns, not rows.
+  
+## Taxa table
+```{r, }
+head(taxa)
+```
+
+
+####2. Create a phyloseq object with the three with taxa table, asv table, and sample list:  Create Phyloseq Object
+```{r}
+ps <- phyloseq(sample_data(Sam_list),
+               otu_table(seqtab.nochim, taxa_are_rows = FALSE),
+               tax_table(taxa))
+```
+
+# Save Phyloseq Object
+```{r}
+save(ps, file = "phyloseqObject.Rdata")
+```
+
+
+
+# Session Info
+```{r}
+sessionInfo()
+```
+
+#### 3. run ASV table through lulu curation and remove any asv's from created phyloseq object.  Curate ASVs (lulu) to combine nested mother/daughter matches
+
+Make a blast db using the fasta of ASV reference sequences
+
+Blast the ASVs against the database
+- Open Terminal, cd to seqtab folder where the data are located...
+
+- makeblastdb -in ASVs.fasta -parse_seqids -dbtype nucl
+- blastn -db ASVs.fasta -outfmt "6 qseqid sseqid pident" -out match_list.txt -qcov_hsp_perc 80 -perc_identity 84 -query ASVs.fasta
+
+Use the blast match file and the ASV matrix (transformed) to run lulu
+collect retained files and prune them against our phyloseq object "ps"
+
+A total of 11065 reads were originally collected, 7933 passed lulu run
+
+``` {r}
+asv_lulu_retained <- read_csv("asv_lulu_retained.csv")
+asv_lulu_ret <- as.character(asv_lulu_retained$x)
+ps.lulu <- prune_taxa(asv_lulu_ret, ps)
+```
+
+```{r}
+ps <- ps.lulu
+```
+#Inspect lulu phyloseq object now created
+```{r}
+ps
+```
+#export taxonomy table from lulu object removal of "k__, p__ and c__...etc... in Excel"
+```{r}
+tax_export <- as(tax_table(ps), "matrix")
+tax_exportdf <- as.data.frame(tax_export)
+tax_export_columns <- tibble::rownames_to_column(tax_exportdf, "asv")
+names(tax_export_columns) <- tolower(names(tax_export_columns))#lowercase column names
+
+tax_export_columns$kingdom <-gsub('k__', "", tax_export_columns$kingdom)
+tax_export_columns$phylum <-gsub('p__', "", tax_export_columns$phylum)
+tax_export_columns$class <-gsub('c__', "", tax_export_columns$class)
+tax_export_columns$order <-gsub('o__', "", tax_export_columns$order)
+tax_export_columns$family <-gsub('f__', "", tax_export_columns$family)
+tax_export_columns$genus <-gsub('g__', "", tax_export_columns$genus)
+tax_export_columns$species <-gsub('s__', "", tax_export_columns$species)
+
+write_csv (tax_export_columns, "C:/Users/jjhackma/OneDrive - North Carolina State University/Documents/phyloseqobjectcreation/tax_export_columns.csv")
+```
+
+#reading in new taxa table ensure all columns are in lower case and first column is labeled "asv" 
+```{r}
+tax_export_columns_removed <- read_csv("~/phyloseqobjectcreation/tax_export_columns_removed.csv")
+```
+
+### Run lulu curated taxa table through FunGuild for functional taxonomic assignment 
+
+#### 5. FunGuild functional assignment ####
+
+#note tax table format needs all k__, p__, c__ removed from taxonomic names all columns headers need to be in lowercase, ASV#'s need to be a column and not a rot title. 
+```{r}
+fg_assign <- function(tax){
+  # Check if dependencies are installed
+  if (!require('rvest'   ,character.only = TRUE)){
+    stop("please install the rvest package.")
+  }
+  if (!require('jsonlite',character.only = TRUE)){
+    stop("please install the jsonlite package.")
+  }
+  if(!require('tidyverse', character.only = TRUE)){
+    stop('please install the tidyverse package.')
+  }
+  
+  # Check that the input data is a data frame
+  if (!is.data.frame(tax)){
+    stop('Your taxonomy table needs to be a data.frame. Try again.')
+  }
+  
+  # Column names to lower case
+  tax <- tax %>% rename_all(tolower)
+  
+  fg <- "http://www.stbates.org/funguild_db.php" %>% 
+    xml2::read_html() %>%
+    rvest::html_text() 
+  fg <- jsonlite::fromJSON(gsub("funguild_db_2", "", fg)) %>% 
+    mutate(taxonomicLevel = as.numeric(taxonomicLevel))
+  
+  # Define operator
+  `%notin%` <- Negate(`%in%`)
+  
+  # Match on species level
+  spp_match <- tax %>% 
+    mutate(species = str_c(genus, species, sep = " ")) %>% 
+    left_join(., fg %>% select(taxon, guild), by = c('species' = 'taxon')) %>% 
+    filter(!is.na(guild))
+  
+  # Match on genus level
+  genus_match <- tax %>% 
+    filter(species %notin% spp_match$species) %>% 
+    left_join(., fg %>% select(taxon, guild), by = c('genus' = 'taxon')) %>% 
+    filter(!is.na(guild))
+  
+  # Match on family level
+  family_match <- tax %>%
+    filter(species %notin% spp_match$species) %>% 
+    filter(species %notin% genus_match$species) %>% 
+    left_join(., fg %>% select(taxon, guild), by = c('family' = 'taxon')) %>% 
+    filter(!is.na(guild))
+  
+  # Match on order level
+  order_match <- tax %>% 
+    filter(species %notin% spp_match$species) %>% 
+    filter(species %notin% genus_match$species) %>% 
+    filter(species %notin% family_match$species) %>% 
+    left_join(., fg %>% select(taxon, guild), by = c('order' = 'taxon')) %>% 
+    filter(!is.na(guild))
+  
+  # Match on phylum level
+  phylum_match <- tax %>% 
+    filter(species %notin% spp_match$species) %>% 
+    filter(species %notin% genus_match$species) %>% 
+    filter(species %notin% family_match$species) %>% 
+    filter(species %notin% order_match$species) %>% 
+    left_join(., fg %>% select(taxon, guild), by = c('phylum' = 'taxon')) %>% 
+    filter(!is.na(guild))
+  
+  # Combine data, assign mycorrhizal status
+  out <- bind_rows(spp_match, genus_match, family_match, order_match, phylum_match) %>% 
+    mutate(myc_status = case_when( str_detect(guild, 'Arbuscular Mycorrhizal') ~ 'Arbuscular Mycorrhizal', 
+                                   str_detect(guild, 'Ectomycorrhizal') & str_detect(guild, 'Ericoid Mycorrhizal') ~ 'Ectomycorrhizal - Ericoid Mycorrhizal', 
+                                   str_detect(guild, 'Ectomycorrhizal') ~ 'Ectomycorrhizal', 
+                                   str_detect(guild, 'Ericoid Mycorrhizal') ~ 'Ericoid Mycorrhizal', 
+                                   TRUE ~ 'Non Mycorrhizal'))
+  
+  # Print stats
+  cat(sum(!is.na(out$guild))/(nrow(tax))*100,'% of taxa assigned a functional guild.', sep = '')
+  
+  return(out)
+}
+```
+```{r}
+
+fung_tax_columns_removed <- fg_assign(tax_export_columns_removed) #assign guild info
+```
+
+
+
+```{r}
+Funtax <- fung_tax_columns_removed
+```
+
+
+
+```{r}
+write_csv (Funtax, "C:/Users/jjhackma/OneDrive - North Carolina State University/Documents/phyloseqobjectcreation/Funtax.csv")
+```
+
+
+
+
+
+### After this point a new Phyloseq table has been created that will be used for the remainder of analysis with FUnguild FUnctional Assignments.
+### a strange artifact was causing many samples to be duplicated, manual removal of duplications was performed with "Fungax_dups_removed_viaexcel". 
+### This table was then loaded into a phyloseq object for all other analysis. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+funtaxmat <- read_csv("Funtax_dups_removed_viaexcel.csv") %>%
+  column_to_rownames(var="...1") %>%
+  as.matrix 
+```
+
+#create phyloseq object
+```{r}
+psfuntax <- phyloseq(sample_data(Sam_list),
+               otu_table(seqtab.nochim, taxa_are_rows = FALSE),
+               tax_table(funtaxmat))
+
+psfuntax
+```
+list(psfunta)
+
+#inspect phylseq elements
+```{r}
+rank_names(psfuntax)
+sample_variables(psfuntax)
+sample_sums(psfuntax)
+taxa_sums(psfuntax)
+```
+
+#Look for unique taxa
+```{r}
+get_taxa_unique(psfuntax, taxonomic.rank = "myc_status")
+```
+#Ectomycorrhizal dataset
+```{r}
+ecto <-subset_taxa(psfuntax, myc_status == "Ectomycorrhizal")
+ntaxa(ecto)
+taxa_sums(ecto)
+sample_sums(ecto)
+```
+
+```{r}
+ecto <- prune_samples(sample_sums(ecto)>1, ecto)
+
+ecto <- prune_taxa(taxa_sums(ecto) > 1, ecto)
+
+sample_sums(ecto)
+taxa_sums(ecto)
+```
+
+```{r}
+psfunpp <- subset_samples(psfuntax, Harvest == "After")
+sample_sums(psfunpp)
+```
+
+```{r}
+psfunppecto <- subset_taxa(psfunpp, myc_status == "Ectomycorrhizal")
+psfunppecto <- prune_samples(sample_sums(psfunppecto)>1, psfunppecto)
+
+psfunppecto <- prune_taxa(taxa_sums(psfunppecto) > 1, psfunppecto)
+sample_sums(psfunppecto)
+```
+```{r}
+psfunppectoWP <- subset_samples(psfunppecto, PNP == "P")
+psfunppectoWP
+```
+```{r}
+psfunmesh <- subset_samples(psfuntax, Type = "Post")
+psfunmeshP <-subset_samples(psfunmesh, PNP = "P")
+```
+```{r}
+psfunppectoNP <- subset_samples(psfunppecto, PNP == "NP")
+psfunppectoNP
+```
+
+```{r}
+rank_names(psfunppectoNP)
+sample_variables(psfunppectoNP)
+sample_sums(psfunppectoNP)
+```
+
+#ectomycorrhizal dataset by Root
+```{r}
+ectoroot <-subset_samples(ecto, Type == "Root")
+ectoroot <- prune_samples(sample_sums(ectoroot)>1, ectoroot)
+
+ectorootx <- prune_taxa(taxa_sums(ectoroot) > 1, ectoroot)
+```
+```{r}
+ntaxa(ectorootx)
+```
+
+```{r}
+ectoroot <- ectorootx
+```
+
+#subset total functional group by root
+```{r}
+
+funroot <- subset_samples(psfuntax, Type == "Root")
+funroot
+
+```
+#ectomycorrhizal by Bag
+```{r}
+ectopost <-subset_samples(ecto, Type == "Post")
+```
+
+```{r}
+ectopost
+ntaxa(ectopost)
+```
+```{r}
+ectopostp <- prune_samples(sample_sums(ectopost)>1, ectopost)
+
+epmesh <- prune_taxa(taxa_sums(ectopostp) > 1, ectopostp)
+```
+
+```{r}
+ntaxa(epmesh)
+```
+
+```{r}
+ectopostspod <- subset_samples(ectopost, Soil = "SPOD")
+ectopostalf <- subset_samples(ectopost, Soil = "ALF")
+ectopostspod
+ectopostalf
+```
+#plot EctoRoot data by soil at the genus and spp level
+
+```{r}
+top100ecto <-names(sort(taxa_sums(ectoroot), decreasing=TRUE)) [1:20]
+ps_gp_top100 <- prune_taxa(top100ecto, ectoroot)
+ntaxa(ps_gp_top100)
+```
+#separation between alfisol and spodosol ectomycorrhizal communitiy
+```{r}
+alphecto <- subset_samples(ecto, Soil == "ALF")
+spodecto <-subset_samples(ecto, Soil == "SPOD")
+alphecto
+spodecto
+```
+#additional subsetting into Root vs. non-root mycorrhizal community
+
+```{r}
+alphectoroot <- subset_samples(alphecto, Type == "Root")
+
+alphectopost <- subset_samples(alphecto, Type == "Post")
+
+spodectoroot <- subset_samples(spodecto, Type == "Root")
+
+
+spodectopost <-  subset_samples(spodecto, Type == "Post")
+```
+
+```{r}
+alphectopostWP <- subset_samples(alphecto, PNP == "P")
+spodectopostWP <- subset_samples(spodecto, PNP == "P")
+alphectopostNP <- subset_samples(alphecto, PNP == "NP")
+spodectopostNP <-  subset_samples(spodecto, PNP == "NP")
+```
+
+#trimming to the top 50 Taxa in each sample
+```{r}
+alphectoroot50 <-names(sort(taxa_sums(alphectoroot), decreasing=TRUE)) [1:50]
+alfroot50 <- prune_taxa(alphectoroot50, alphectoroot)
+ntaxa(alfroot50)
+
+alpfpost50sort <-names(sort(taxa_sums(alphectopost), decreasing=TRUE)) [1:50]
+alfpost50 <- prune_taxa(alpfpost50sort, alphectopost)
+ntaxa(alfpost50)
+
+
+spodrootecto50 <-names(sort(taxa_sums(spodectoroot), decreasing=TRUE)) [1:50]
+spodroot50 <- prune_taxa(spodrootecto50, spodectoroot)
+ntaxa(spodroot50)
+
+spodpostecto50 <-names(sort(taxa_sums(spodectopost), decreasing=TRUE)) [1:50]
+spodpost50 <- prune_taxa(spodpostecto50, spodectopost)
+ntaxa(spodpost50)
+
+spodpostecto50WP <-names(sort(taxa_sums(spodectopostWP), decreasing=TRUE)) [1:50]
+spodpost50WP <- prune_taxa(spodpostecto50WP, spodectopostWP)
+ntaxa(spodpost50)
+
+alpfpost50sortWP <-names(sort(taxa_sums(alphectopostWP), decreasing=TRUE)) [1:50]
+alfpost50WP <- prune_taxa(alpfpost50sortWP, alphectopostWP)
+ntaxa(alfpost50)
+
+```
+
+
+#bar plots showing differences betweeen the samples. 
+```{r}
+plot_bar(alfroot50, "Carryover", fill = "genus", title = "Alfisol Ecto Carryover Rhizosphere")
+plot_bar(alfpost50, "Carryover", fill = "genus", title = "Alfisol Ecto Carryover Mesh Bags")
+plot_bar(spodroot50, "Carryover", fill = "genus", title = "Spodosol Ecto Carryover Rhizosphere")
+plot_bar(spodpost50, "Carryover", fill = "genus", title = "Spodosol Ecto Carryover Mesh Bags")
+plot_bar(spodpost50WP, "Carryover", fill = "genus", title ="Spodosol Ecto Carryover Only With P Bags")
+plot_bar(alfpost50WP, "Carryover", fill = "genus", title = "Alfisol Ecto Carryover Only With P Bags")
+```
+
+
+
+
+```{r}
+plot_bar(ectoroot, "Soil", fill = "genus", facet_grid =~Carryover)
+```
+
+```{r}
+plot_bar(ectopost, "Soil", fill = "genus", facet_grid =~ Carryover)
+```
+```{r}
+ntaxa(ectoroot)
+ntaxa(ectopost)
+```
+
+
+```{r}
+ps_new <- ecto
+```
+#remove singleton taxa and samples with zero sums
+```{r}
+ps_nosing <- prune_taxa(taxa_sums(ps_new) > 1, ps_new)
+ntaxa(ps_nosing)
+```
+#Prune samples 
+#```{r}
+ps_nosing <- prune_samples(sample_sums(ps_nosing) > 20 , ps_nosing)
+nsamples(ps_nosing)
+sample_sums(ps_nosing)
+#```
+
+# Get all taxonomic RanksKingdom: Collect Top 100 taxa based on abundance in dataset 3 samples removed due to less than 20 read counts
+Phylum: 17
+Class: 56
+Order: 153
+Family :368
+Genus: 755
+Species: 976
+
+#```{r}
+top100 <-names(sort(taxa_sums(ps_nosing), decreasing=TRUE)) [1:100]
+ps_nosingtop100 <- prune_taxa(top100, ps_nosing)
+#ntaxa(ps_nosingtop100)
+#```
+
+# Subset samples into Pre, Post, and Root Samples
+```{r}
+Root <- subset_samples(psfuntax, Type == "Root")
+Post <- subset_samples(psfuntax, Type == "Post")
+ntaxa(Root)
+```
+
+```{r}
+Rootp <- prune_samples(sample_sums(Root)>1, Root)
+
+Rootp <- prune_taxa(taxa_sums(Rootp) > 1, Rootp)
+```
+
+```{r}
+mesh <- prune_samples(sample_sums(Post)>1, Post)
+
+mesh <- prune_taxa(taxa_sums(mesh) > 1, mesh)
+ntaxa(mesh)
+```
+
+
+```{r}
+ntaxa(Rootp)
+```
+
+```{r}
+ntaxa(Post)
+```
+
+#alphaDiversityPlots
+```{r}
+alpha_all <- estimate_richness(alphecto, split=TRUE, measures=c("Observed", "Chao1", "Shannon", "Simpson"))
+alpha_root <- estimate_richness(spodecto, split=TRUE, measures=c("Observed", "Chao1", "Shannon", "Simpson"))
+```
+#alphaWrite
+```{r}
+write.csv(alpha_all, "alpha_all.csv") 
+write.csv(alpha_root,"alpha_root.csv") 
+write.csv(alpha_post, "alpha_post.csv") 
+write.csv(alpha_pre, "alpha_pre.csv") 
+```
+
+# PlotalphadiversityforallSoil
+```{r}
+plot_richness(alphecto, x="Carryover", measures=c("Observed", "Chao1", "Shannon", "Simpson"))
+plot_richness(ecto, x="Soil", measures=c("Observed", "Chao1", "Shannon", "Simpson"))
+plot_richness(ecto, x="Type", measures=c("Observed", "Chao1", "Shannon", "Simpson"))
+plot_richness(ecto, x="PNP", measures=c("Observed", "Chao1", "Shannon", "Simpson"))
+```
+
+#plotalphadiversitybyPNP
+```{r}
+plot_richness(Post, x="PNP", measures=c("Observed", "Chao1", "Shannon", "Simpson"))
+plot_richness(Pre, x="PNP", measures=c("Observed", "Chao1", "Shannon", "Simpson"))
+```
+
+#plotalphadiversitybycarryovertreatment
+```{r}
+plot_richness(Post, x="Carryover", measures=c("Observed", "Chao1", "Shannon", "Simpson"))
+plot_richness(Pre, x="Carryover", measures=c("Observed", "Chao1", "Shannon", "Simpson"))
+plot_richness(Root, x="Carryover", measures=c("Observed", "Chao1", "Shannon", "Simpson"))
+```
+
+## Beta Diversities
+
+
+
+#vst transformation in DeSeq2
+```{r}
+decto <- phyloseq_to_deseq2(ectoroot, ~ Soil)
+```
+```{r}
+gm_mean = function(x, na.rm=TRUE){ exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))}
+geoMeans = apply(counts(decto), 1, gm_mean)
+ps_ds = estimateSizeFactors(decto, type="ratio", geoMeans = geoMeans) #alt types are "poscounts" and "iterate"
+ps_ds = estimateDispersions(ps_ds, fitType = "local")
+```
+```{r}
+ps_ds = DESeq(ps_ds, test="Wald", fitType="parametric") 
+```
+```{r}
+vst<-getVarianceStabilizedData(ps_ds)
+otus_vst<- t(vst)
+str(otus_vst)
+str(vst)
+
+```
+```{r}
+min(otus_vst)
+```
+```{r}
+vstep <- ectoroot
+
+otus_vstpost <- getVarianceStabilizedData(ps_ds)
+
+epvst <- otu_table(otus_vstpost, taxa_are_rows = TRUE)
+
+epvst
+```
+
+# adjusted for postive values
+```{r}
+ps_vst_ep <- transform_sample_counts(epvst, function(x) x+5.5)
+```
+
+```{r}
+ps_vst_ep
+```
+
+```{r}
+EctoPost_VST <- t(ps_vst_ep)
+```
+
+```{r}
+write.csv(EctoPost_VST, "EctoRoot_VST.csv")
+```
+
+#ordination for vegan.
+```{r}
+otus_nmds <- otu_table(ps_vst_pos)
+otus_nmds <- as.data.frame(t(otus_nmds))
+```
+
+```{r}
+ord2 <- metaMDS(otus_nmds, distance = "bray", autotransform = FALSE, trymax=1000)
+```
+
+
+```{r}
+ord2
+```
+```{r}
+stressplot(ord2)
+```
+
+###Adding environmental variables to vegan.
+```{r}
+ord2_env <- envfit(otus_nmds, Sam_list, permutations = 99, strata = NULL, choices=c(1,2), na.rm = TRUE)
+ord2_env
+```
+```{r}
+envfit(ord2, Sam_list$Biomass, perm=99, pt.size=4, alpha= 0.05)
+```
+
+```{r}
+dist_vst <- vegdist(otus_vst, "euclidean")
+```
+```{r}
+ord4 <- wcmdscale(dist_vst, k=2, eig=TRUE)
+ord4
+```
+
+```{r}
+summary(eigenvals(ord4))
+```
+
+
+```{r}
+ordisurf(ord4,Sam_list$Biomass, binwidth=0.5, pt.size=3, var.label="Biomass")
+```
+
+```{r}
+str(ord4)
+```
+
+```{r}
+str(Sam_list)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+ ord1 <- ordinate(ps_vst_pos, "NMDS", "bray", trymax=20) 
+```
+```{r}
+stressplot(ord1)
+```
+
+```{r}
+p1_ord1 <- plot_ordination(ps_vst_pos, ord1, type="samples", color="PNP", title="Fungi Between Soil Types") 
+p1_ord1
+```
+```{r}
+p1_ord1 + 
+  stat_ellipse(type="norm", linetype = 2) +
+  theme_bw()
+```
+
+
+```{r}
+psroot <- phyloseq_to_deseq2(Root, ~Carryover) 
+pspost <- phyloseq_to_deseq2(Post, ~Carryover)
+pspre <- phyloseq_to_deseq2(Pre, ~Carryover)
+```
+
+#estimate Size Factors
+```{r}
+gm_mean_Root = function(x, na.rm=TRUE){ exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))}
+geoMeans = apply(counts(psroot), 1, gm_mean_Root)
+psroot = estimateSizeFactors(psroot, type="ratio", geoMeans = geoMeans) #alt types are "poscounts" and "iterate"
+psroot = estimateDispersions(psroot, fitType = "local")
+
+gm_mean_post = function(x, na.rm=TRUE){ exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))}
+geoMeans = apply(counts(pspost), 1, gm_mean_post)
+pspost = estimateSizeFactors(pspost, type="ratio", geoMeans = geoMeans) #alt types are "poscounts" and "iterate"
+pspost = estimateDispersions(pspost, fitType = "local")
+
+gm_mean_pre = function(x, na.rm=TRUE){ exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))}
+geoMeans = apply(counts(pspre), 1, gm_mean_pre)
+pspre = estimateSizeFactors(pspre, type="ratio", geoMeans = geoMeans) #alt types are "poscounts" and "iterate"
+pspre = estimateDispersions(pspre, fitType = "local")
+
+```
+#Fitting 
+
+```{r}
+psroot = DESeq(psroot, test="Wald", fitType="parametric") 
+pspost = DESeq(pspost, test="Wald", fitType="parametric") 
+pspre = DESeq(pspre, test="Wald", fitType="parametric") 
+```
+
+#For Ordination in Vegan
+```{r}
+vstroot <-getVarianceStabilizedData(psroot)
+
+
+vstpre<-getVarianceStabilizedData(pspre)
+
+
+vstpost<-getVarianceStabilizedData(pspost)
+
+```
+
+
+#find minimum values to exclude later
+```{r}
+min(vstdecto)
+min(otus_vstpost)
+min(otus_vstpre)
+
+
+# POST
+```{r}
+ps_vst_post <- Post
+otus_vst2_post<-getVarianceStabilizedData(pspost)
+otu_table(ps_vst_post) <- otu_table(otus_vst2_post, taxa_are_rows = TRUE)
+ps_vst_post
+```
+# ROOT 
+```{r}
+ps_vst_root <- Root
+otus_vst2_root<-getVarianceStabilizedData(psroot)
+otu_table(ps_vst_root) <- otu_table(otus_vst2_root, taxa_are_rows = TRUE)
+ps_vst_root
+```
+#Not Vegan Ordination plots(Transformed)
+```{r}
+ps_vst_root <- transform_sample_counts(Root, function(x) x+5.176034)
+ps_vst_pre <- transform_sample_counts(Pre, function(x) x+5.180643)
+ps_vst_post <- transform_sample_counts(Post, function(x) x+4.985894)
+```
+
+
+#Ordination Plots---Not Vegan
+
+
+
+```{r}
+ordecto <- ordinate(ecto, "NMDS", "bray")
+stressplot(ordecto)
+```
+```{r}
+ordRoot <- ordinate(Root, "NMDS", "bray", trymax=100) 
+stressplot(ordRoot)
+ordPost <- ordinate(Post, "NMDS", "bray", trymax=100)
+stressplot(ordPost)
+```
+
+```{r}
+ordP <- ordinate(psfunmeshP, "NMDS", "bray", trymax=100)
+stressplot(ordP)
+```
+
+#Ordianate using Bray Curtis Dissimilarty Matrix
+```{r}
+Post_ord <- plot_ordination(Post, ordPost, type="samples", color="Soil", title="NMDS 2021 Mesh Bag Samples By Soil Type")
+
+Root_ord <- plot_ordination(Root, ordRoot, type="samples", color="Soil", title="NMDS 2021 Mesh Bag Samples By Soil Type")
+```
+
+```{r}
+OrdPmesh <- plot_ordination(ecto, ordP, type="samples", color="Soil", title="NMDS 2021 Mesh Bag With P")
+```
+
+```{r}
+ps_ord <- plot_ordination(ordecto, type="samples", color="Soil", title="NMDS 2021 Mesh Bag Samples By Sample Type")
+```
+
+```{r}
+Post_ord + 
+  stat_ellipse(type="norm", linetype = 2) +
+  theme_bw()
+
+Root_ord + 
+  stat_ellipse(type="norm", linetype = 2) +
+  theme_bw()
+
+OrdPmesh + 
+  stat_ellipse(type="norm", linetype = 2) +
+  theme_bw()
+```
+
+```{r}
+ps_ord + 
+  stat_ellipse(type="norm", linetype = 2) +
+  theme_bw()
+```
+#show ordination plots
+```{r}
+Post_ord
+Root_ord
+```
+
+```{r}
+ps_ord
+```
+
+
+
+
+
+#Core Biome analysis 
+```{r}
+ntaxa(ecto)
+```
+
+```{r}
+ps_nosing_ecto <- prune_taxa(taxa_sums(ecto) > 1, ecto)
+ntaxa(ps_nosing_ecto)
+```
+
+
+
+
+
+```{r}
+
+# Some approaches require a clr transformation 
+otu4clr <- otu_table(ps_nosing_ecto)
+OTU_clr <- clr(otu4clr)
+OTU_clr[1,]
+ps_clr <- ps_nosing_ecto
+otu_table(ps_clr) <- otu_table(OTU_clr, taxa_are_rows = TRUE)
+```
+
+```{r}
+Sam_list
+```
+
+```{r}
+alphectovenn <- ps_venn(ecto, "PNP", fraction=0, weight=FALSE, type="counts", relative=FALSE, plot=FALSE
+                        )
+alphectovenn
+
+spodectovenn <- ps_venn(spodecto, "Type", fraction=0, weight=FALSE, type="counts", relative=FALSE, plot=TRUE)
+spodectovenn
+```
+ASV With P 40 
+$Post
+ [1] "ASV118"   "ASV160"   "ASV245"   "ASV361"   "ASV977"   "ASV1294"  "ASV1372"  "ASV1437"  "ASV1502" 
+[10] "ASV1740"  "ASV2206"  "ASV3543"  "ASV4075"  "ASV4622"  "ASV4695"  "ASV4890"  "ASV4961"  "ASV5197" 
+[19] "ASV5210"  "ASV5330"  "ASV5332"  "ASV5429"  "ASV6197"  "ASV6336"  "ASV6578"  "ASV6859"  "ASV7118" 
+[28] "ASV7128"  "ASV7442"  "ASV7828"  "ASV8188"  "ASV8319"  "ASV8635"  "ASV8689"  "ASV8783"  "ASV9180" 
+[37] "ASV9319"  "ASV9332"  "ASV9414"  "ASV9871"  "ASV9893"  "ASV9951"  "ASV9952"  "ASV10417" "ASV10463"
+[46] "ASV10498" "ASV10503" "ASV10865" "ASV10931"
+
+$Root
+[1] "ASV3584"  "ASV3723"  "ASV4125"  "ASV6482"  "ASV7343"  "ASV9698"  "ASV9703"  "ASV10394"
+
+$Post__Root
+ [1] "ASV254"  "ASV329"  "ASV373"  "ASV376"  "ASV394"  "ASV512"  "ASV526"  "ASV837"  "ASV947"  "ASV1270"
+[11] "ASV2099" "ASV2140"
+
+```{r}
+p1_pnp <- ps_venn(ecto, "PNP", fraction=0, weight=FALSE, type="counts", relative=FALSE, plot=FALSE)
+p1_pnp
+```
+```{r}
+taxa.prev <- kable(head(prevalence(ps_nosing_ecto, detection = 10/100, sort=TRUE))) 
+# use kable to get tabular format
+taxa.prev
+```
+
+```{r}
+# note: can adjust prevalence to match taxa.prev table
+core.taxa1 <- core_members(ps_nosing_ecto, detection = 0, prevalence = 5/100)
+core.taxa1
+```
+```{r}
+ps_core <- core(ps_nosing, detection = 1/100, prevalence = 10/100)
+ps_core # compare taxa remaining to ps_nosing
+
+core.taxa3 <- taxa_names(ps_core) # retrieve core taxa and check match to core.taxa2
+core.taxa3
+```
+```{r}
+tax.core.id <-tax_table(ps_core) # get taxonomy table from ps object
+tax.core.id <- as.data.frame(tax.core.id) # convert to dataframe
+tax.core.id$OTU <- rownames(tax.core.id) # make OTU IDs the last column
+
+core.taxa.class <- dplyr::filter(tax.core.id, rownames(tax.core.id) %in% core.taxa3)
+kable(head(core.taxa.class))
+```
+
+```{r}
+prevalences <- seq(0.05, 1, 0.05)
+detections <-  round(10^seq(log10(1), log10(1000), length = 10), 3)
+
+# Heatmap of core
+p2 <- plot_core(ps_core, plot.type = "heatmap",
+           colours = rev(brewer.pal(5, "Spectral")),         
+            prevalences = prevalences,
+           detections = detections
+           ) +
+    labs(x = "Detection Threshold (Rel Abund %)") 
+p2
+```
+```{r}
+# Aggregate taxa at the Class level
+ps_core_class <- aggregate_taxa(ps_core, "class")
+
+prevalences <- seq(0.05, 1, 0.05)
+detections <-  round(10^seq(log10(1), log10(1000), length = 5), 3)
+
+p3 <- plot_core(ps_core_class, plot.type = "heatmap",
+           colours = rev(brewer.pal(5, "Spectral")),         
+            prevalences = prevalences,
+           detections = detections
+           ) +
+    labs(x = "Detection Threshold (Rel Abund %)") 
+p3
+```
+
+# Species indicator analysis
+
+
+#Species indicator analysis for only ecto dataset need to separate 
+
+
+```{r}
+iotupost <- otu_table(ectopost)
+iotupost <- as.data.frame(iotupost)
+ #transpose to get samples in rows and species in columns
+str(iotupost)
+```
+
+```{r}
+ioturoot <- otu_table(ectoroot)
+ioturoot <- as.data.frame(ioturoot)
+str(ioturoot)
+```
+
+```{r}
+iotuecto <- otu_table(ecto)
+iotuecto <- as.data.frame(iotuecto)
+str(iotuecto)
+```
+
+```{r}
+iotufunroot <- otu_table(funroot)
+iotufunroot <- as.data.frame(iotufunroot)
+str(iotufunroot)
+```
+
+#carryover treatments with P for each soil type
+
+```{r}
+iotualfpostwp <- otu_table(alphectopostWP)
+iotualfpostwp <- as.data.frame(iotualfpostwp)
+
+iotuspodpostwp <- otu_table(spodectopostWP)
+iotuspodpostwp <- as.data.frame(iotuspodpostwp)
+
+iotualfrootwp <- otu_table(alphectoroot)
+iotualfrootwp <- as.data.frame(iotualfrootwp)
+                               
+iotuspodrootwp <- otu_table(spodectoroot)
+iotuspodrootwp <- as.data.frame(iotuspodrootwp)
+```
+
+#Sample Data
+```{r}
+idatalfpostwp <- sample_data(alphectopostWP)
+
+idatspodpostwp <- sample_data(spodectopostWP)
+
+idatalfrootwp <- sample_data(alphectoroot)
+
+idataspodrootwp <- sample_data(spodectoroot)
+```
+
+```{r}
+idatafunroot <- sample_data(funroot)
+```
+
+```{r}
+idatapost <- sample_data(ectopost)
+str(idatapost)
+```
+
+```{r}
+idataroot <- sample_data(ectoroot)
+str(idataroot)
+```
+
+```{r}
+idataecto <- sample_data(ecto)
+str(idataecto)
+```
+
+```{r}
+funrootsoil <- idatafunroot$Soil
+
+funrootcarryover <- idatafunroot$Carryover
+```
+
+#soil types by carryover 
+
+```{r}
+group_alfpost <- idatalfpostwp$Carryover
+
+group_spodpost <- idatspodpostwp$Carryover
+
+group_alfroot <- idatalfrootwp$Carryover
+
+group_spodroot <- idataspodrootwp$Carryover
+```
+#all
+```{r}
+group_ectosoil <- idataecto$Type
+group_ectosoil
+
+group_ectocarryover <- idataecto$Carryover
+group_ectocarryover
+
+group_ectoPNP <- idataecto$PNP
+group_ectoPNP
+```
+#mesh Bags
+```{r}
+groups_ecosyspostsoil <- idatapost$Soil
+groups_ecosyspostsoil
+
+groups_ecosyspostpnp <- idatapost$PNP
+groups_ecosyspost
+
+groups_ecosyscarryover <-idatapost$Carryover
+groups_ecosyscarryover
+
+```
+
+#Root
+```{r}
+groups_ecosysrootsoil <- idataroot$Soil
+groups_ecosysrootsoil
+
+groups_ecosysrootcarryover <- idataroot$Carryover
+groups_ecosysrootcarryover
+
+```
+
+#```{r}
+#groups_ecosys <- as.numeric(groups_ecosys)
+#groups_ecosys 
+#```
+```{r}
+indval_ecosys <- multipatt(iotufunroot,funrootsoil, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE)
+
+indval_ecosys <- multipatt(iotufunroot,funrootcarryover, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE)
+```
+
+#WP by Soil type
+```{r}
+indval_ecosys <- multipatt(iotualfpostwp,group_alfpost, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE)
+
+indval_ecosys <- multipatt(iotuspodpostwp,group_spodpost, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE)
+
+indval_ecosys <- multipatt(iotualfrootwp,group_alfroot, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE)
+
+indval_ecosys <- multipatt(iotuspodrootwp,group_spodroot, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE)
+```
+
+
+#Ecto dataset 
+```{r}
+indval_ecosys <- multipatt(iotuecto,group_ectosoil, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE)
+
+indval_ecosys <- multipatt(iotuecto,group_ectocarryover, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE)
+
+indval_ecosys <- multipatt(iotuecto,group_ectoPNP, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE)
+```
+
+Post Dataset
+```{r}
+indval_ecosys <- multipatt(iotupost,groups_ecosyspostsoil, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE) 
+
+indval_ecosys <- multipatt(iotupost,groups_ecosyspostpnp, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE)
+
+indval_ecosys <- multipatt(iotupost,groups_ecosyscarryover, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE)
+
+#indval_ecosys <- multipatt(iotupost,groups_ecosystype, control = how(nperm=999), duleg=TRUE) 
+#summary(indval_ecosys, indvalcomp=TRUE)
+```
+
+Root Dataset
+```{r}
+
+indval_ecosys <- multipatt(ioturoot,groups_ecosysrootsoil, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE ) 
+indval_ecosys <- multipatt(ioturoot, groups_ecosysrootcarryover, control = how(nperm=999), duleg=TRUE) 
+summary(indval_ecosys, indvalcomp=TRUE ) 
+```
+
+
+### Permanova Statistics on Whole Dataset
+
+
+
+
+```{r}
+SAM_new <- Sam_list
+#rownames(alpha)
+#rownames(SAM_new)
+
+SAM_new <- merge(Sam_list, alpha, by="row.names")
+colnames(SAM_new)
+
+# move first column to rownames
+SAM_new <- column_to_rownames(SAM_new, "Row.names")
+#colnames(SAM_new)
+
+# merge into ps object
+sample_data(ps_vst) <- sample_data(SAM_new)
+```
+```{r}
+ectomat <- as.matrix(ectonosing@otu_table@.Data)
+ectomat <- data.frame(t(ectomat))
+write_csv (ectomat, "C:/Users/jjhackma/OneDrive - North Carolina State University/Documents/phyloseqobjectcreation/ectomat.csv")
+```
+

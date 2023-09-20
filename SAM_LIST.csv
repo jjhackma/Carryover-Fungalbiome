@@ -1,0 +1,91 @@
+﻿,Cell,Value,Type,samtype,Harvest,Soil,Plot,Carryover,Location,PNP,Biomass,Mehlich,Height
+C9-2Post,C9,2,Post,Mesh Bag,After,ALF,2108,121_0 P,B,P_Untreated,0.266501474,6.5,2.28
+C10-4Post,C10,4,Post,Mesh Bag,After,ALF,1108,121_0 P,B,P_Untreated,0.3406528,8,2.319
+C11-5Post,C11,5,Post,Mesh Bag,After,ALF,1108,121_0 P,B,P_Treated,0.258349923,8,2.319
+A1-8Post,A1,8,Post,Mesh Bag,After,ALF,2401,40_0 P,IB,P_Untreated,0.284707243,49,1.91
+A11-9Post,A11,9,Post,Mesh Bag,After,ALF,1400,40_0 P,B,P_Treated,0.26,18,2.047
+A2-12Post,A2,12,Post,Mesh Bag,After,ALF,2000,0_0 P,B,P_Untreated,0.116,10.5,2.039
+A12-13Post,A12,13,Post,Mesh Bag,After,SPOD,1108,121_0 P,IB,P_Untreated,0.30863111,10,1.589
+C12-14Post,C12,14,Post,Mesh Bag,After,SPOD,2108,121_0 P,B,P_Untreated,0.321255015,4,1.98
+A3-16Post,A3,16,Post,Mesh Bag,After,SPOD,2108,121_0 P,B,P_Treated,0.227074037,4,1.98
+A4-18Post,A4,18,Post,Mesh Bag,After,SPOD,2108,121_0 P,IB,P_Untreated,0.284697509,11,1.98
+D1-19Post,D1,19,Post,Mesh Bag,After,SPOD,1400,40_0 P,B,P_Untreated,0.335148722,8.5,2.22
+D2-20Post,D2,20,Post,Mesh Bag,After,SPOD,2000,0_0 P,IB,P_Untreated,0.17,9.5,1.92
+D3-21Post,D3,21,Post,Mesh Bag,After,ALF,2400,40_0 P,IB,P_Untreated,0.305285113,49,1.91
+B1-22Post,B1,22,Post,Mesh Bag,After,ALF,2400,40_0 P,B,P_Treated,0.259299801,26,1.91
+D4-23Post,D4,23,Post,Mesh Bag,After,SPOD,1401,40_45 P,IB,P_Untreated,0.33401649,7,1.974
+B2-25Post,B2,25,Post,Mesh Bag,After,ALF,1400,40_0 P,B,P_Untreated,0.331409972,18,2.047
+D5-26Post,D5,26,Post,Mesh Bag,After,ALF,1108,121_0 P,IB,P_Treated,0.22004663,6.5,2.319
+D6-27Post,D6,27,Post,Mesh Bag,After,SPOD,1000,0_0 P,B,P_Untreated,0.240017845,6.5,1.974
+D7-28Post,D7,28,Post,Mesh Bag,After,ALF,1000,0_0 P,IB,P_Untreated,0.434097872,9,1.87
+A5-29Post,A5,29,Post,Mesh Bag,After,ALF,1000,0_0 P,IB,P_Untreated,0.245123189,9,1.87
+A6-30Post,A6,30,Post,Mesh Bag,After,SPOD,1108,121_0 P,B,P_Treated,0.226758771,9,1.589
+B3-31Post,B3,31,Post,Mesh Bag,After,ALF,1000,0_0 P,B,P_Untreated,0.211252327,4,1.87
+D8-32Post,D8,32,Post,Mesh Bag,After,ALF,2401,40_45 P,B,P_Treated,0.197903792,9.5,2.354
+B4-33Post,B4,33,Post,Mesh Bag,After,ALF,1401,40_45 P,B,P_Treated,0.223714047,11.5,2.09
+B5-34Post,B5,34,Post,Mesh Bag,After,SPOD,2401,40_45 P,IB,P_Treated,0.227891458,9.5,1.92
+A7-35Post,A7,35,Post,Mesh Bag,After,ALF,2108,121_0 P,IB,P_Untreated,0.313228692,4.5,2.28
+D9-35Post,D9,35,Post,Mesh Bag,After,ALF,2108,121_0 P,IB,P_Untreated,0.343818373,4.5,2.28
+B6-37Post,B6,37,Post,Mesh Bag,After,SPOD,1000,0_0 P,B,P_Treated,0.383008905,6.5,1.974
+D10-38Post,D10,38,Post,Mesh Bag,After,ALF,1401,40_45 P,IB,P_Untreated,0.303229549,19.5,2.09
+B7-39Post,B7,39,Post,Mesh Bag,After,ALF,2108,121_0 P,IB,P_Treated,0.278989738,4.5,2.28
+A8-40Post,A8,40,Post,Mesh Bag,After,SPOD,1108,121_0 P,IB,P_Treated,0.242140204,10,1.589
+D11-41Post,D11,41,Post,Mesh Bag,After,SPOD,1108,121_0 P,B,P_Untreated,0.345940894,9,1.589
+D12-42Post,D12,42,Post,Mesh Bag,After,ALF,2400,40_0 P,B,P_Untreated,0.479086609,26,1.91
+B8-43Post,B8,43,Post,Mesh Bag,After,ALF,2400,40_0 P,IB,P_Treated,0.254190235,49,1.91
+E1-44Post,E1,44,Post,Mesh Bag,After,SPOD,2401,40_45 P,B,P_Treated,0.228773428,7.5,1.92
+B9-45Post,B9,45,Post,Mesh Bag,After,SPOD,2000,0_0 P,B,P_Untreated,0.266866817,6,1.92
+B10-46Post,B10,46,Post,Mesh Bag,After,ALF,2108,121_0 P,B,P_Treated,0.513888889,6.5,2.28
+B11-47Post,B11,47,Post,Mesh Bag,After,SPOD,2400,40_0 P,IB,P_Untreated,0.241232468,12.5,1.766
+E2-48Post,E2,48,Post,Mesh Bag,After,SPOD,2000,0_0 P,IB,P_Treated,0.294895989,9.5,1.92
+B12-49Post,B12,49,Post,Mesh Bag,After,SPOD,1400,40_0 P,IB,P_Untreated,0.226812598,9.5,2.22
+E3-50Post,E3,50,Post,Mesh Bag,After,ALF,2000,0_0 P,IB,P_Treated,0.287192944,11.5,2.039
+C1-51Post,C1,51,Post,Mesh Bag,After,SPOD,2000,0_0 P,IB,P_Treated,0.174064404,9.5,1.92
+E4-52Post,E4,52,Post,Mesh Bag,After,SPOD,1400,40_0 P,IB,P_Treated,0.224424017,9.5,2.22
+E5-53Post,E5,53,Post,Mesh Bag,After,ALF,1401,40_45 P,IB,P_Treated,0.234528047,19.5,2309
+A9-54Post,A9,54,Post,Mesh Bag,After,ALF,1000,0_0 P,B,P_Treated,0.254586554,4,1.87
+C2-56Post,C2,56,Post,Mesh Bag,After,ALF,1400,40_0 P,IB,P_Treated,0.241091663,10.5,2.047
+C3-57Post,C3,57,Post,Mesh Bag,After,SPOD,1400,40_0 P,B,P_Treated,0.296755258,8.5,2.22
+E6-58Post,E6,58,Post,Mesh Bag,After,ALF,1401,40_45 P,B,P_Untreated,0.335523118,11.5,2.09
+C4-59Post,C4,59,Post,Mesh Bag,After,SPOD,2400,40_0 P,IB,P_Treated,0.163854715,12.5,1.766
+C5-60Post,C5,60,Post,Mesh Bag,After,SPOD,2401,40_45 P,IB,P_Untreated,0.334808083,9.5,1.92
+E7-61Post,E7,61,Post,Mesh Bag,After,SPOD,2401,40_45 P,B,P_Untreated,0.225085093,7,1.92
+E8-62Post,E8,62,Post,Mesh Bag,After,SPOD ,1000,0_0 P,IB,P_Untreated,0.370567265,6.5,1.974
+C6-63Post,C6,63,Post,Mesh Bag,After,SPOD,2400,40_0 P,B,P_Treated,0.348934233,9.5,1.766
+E9-65Post,E9,65,Post,Mesh Bag,After,ALF,2401,40_0 P,B,P_Untreated,0.289147839,26,1.91
+E10-66Post,E10,66,Post,Mesh Bag,After,ALF,2000,0_0 P,B,P_Untreated,0.197047781,10.5,2.039
+A10-67Post,A10,67,Post,Mesh Bag,After,SPOD,1000,0_0 P,IB,P_Treated,0.383997269,6.5,1.974
+E11-68Post,E11,68,Post,Mesh Bag,After,SPOD,1401,40_45 P,B,P_Untreated,0.238101632,9,1.974
+C7-71Post,C7,71,Post,Mesh Bag,After,ALF,1108,121_0 P,IB,P_Untreated,0.314710844,6.5,2.319
+E12-72Post,E12,72,Post,Mesh Bag,After,SPOD,1401,40_45 P,IB,P_Treated,0.255344992,7,1.974
+F1-74Post,F1,74,Post,Mesh Bag,After,SPOD,2108,121_0 P,IB,P_Treated,0.213973091,11,1.98
+F2-75Post,F2,75,Post,Mesh Bag,After,ALF,2000,0_0 P,IB,P_Untreated,0.327746344,11.5,2.039
+F3-76Post,F3,76,Post,Mesh Bag,After,SPOD,1401,40_45 P,B,P_Untreated,0.347555526,9,1.974
+C8-77Post,C8,77,Post,Mesh Bag,After,SPOD,2400,40_0 P,B,P_Untreated,0.300153567,9.5,1.766
+F4-78Post,F4,78,Post,Mesh Bag,After,ALF,2401,40_45 P,IB,P_Treated,0.352112676,11,2.354
+H4-42018Pre,H4,42018,Pre,Pre,Before,ALF,1108,121_0 P,B,P_Untreated,1,1,1
+H6-122018Pre,H6,122018,Pre,Pre,Before,ALF,2000,0_0 P,B,P_Untreated,1,1,1
+H7-142018Pre,H7,142018,Pre,Pre,Before,SPOD,2108,121_0 P,B,P_Untreated,1,1,1
+H8-162018Pre,H8,162018,Pre,Pre,Before,SPOD,2108,121_0 P,B,P_Treated,1,1,1
+H11-312018Pre,H11,312018,Pre,Pre,Before,ALF,1000,0_0 P,B,P_Untreated,1,1,1
+H2-412018Pre,H2,412018,Pre,Pre,Before,SPOD,1108,121_0 P,B,P_Untreated,1,1,1
+G12-462018Pre,G12,462018,Pre,Pre,Before,ALF,2108,121_0 P,B,P_Treated,1,1,1
+G11-512018Pre,G11,512018,Pre,Pre,Before,SPOD,2000,0_0 P,B,P_Treated,1,1,1
+G10-542018Pre,G10,542018,Pre,Pre,Before,ALF,1000,0_0 P,B,P_Treated,1,1,1
+G9-662018Pre,G9,662018,Pre,Pre,Before,ALF,2000,0_0 P,B,P_Untreated,1,1,1
+G2-10RRoot,G2,10R,Root,Rhizosphere,After,ALF,1401,40_45 P,X,Rhizosphere,1,15.5,2.09
+G3-11RRoot,G3,11R,Root,Rhizosphere,After,ALF,2401,40_45 P,X,Rhizosphere,1,10.3,2.354
+G4-12RRoot,G4,12R,Root,Rhizosphere,After,SPOD,2401,40_45 P,X,Rhizosphere,1,8.5,1.92
+G5-13RRoot,G5,13R,Root,Rhizosphere,After,ALF,2108,121_0 P,X,Rhizosphere,1,5.5,2.28
+G6-14RRoot,G6,14R,Root,Rhizosphere,After,SPOD,1108,121_0 P,X,Rhizosphere,1,9.5,1.589
+G7-15RRoot,G7,15R,Root,Rhizosphere,After,SPOD,2108,121_0 P,X,Rhizosphere,1,7.5,1.98
+G8-16RRoot,G8,16R,Root,Rhizosphere,After,ALF,1108,121_0 P,X,Rhizosphere,1,7.3,2.319
+F5-1RRoot,F5,1R,Root,Rhizosphere,After,SPOD,2000,0_0 P,X,Rhizosphere,1,7.8,1.84
+F6-2RRoot,F6,2R,Root,Rhizosphere,After,SPOD,1000,0_0 P,X,Rhizosphere,1,6.5,2.047
+F7-3RRoot,F7,3R,Root,Rhizosphere,After,ALF,2000,0_0 P,X,Rhizosphere,1,10.3,2.039
+F8-4RRoot,F8,4R,Root,Rhizosphere,After,ALF,1000,0_0 P,X,Rhizosphere,1,7.3,1.87
+F9-5RRoot,F9,5R,Root,Rhizosphere,After,ALF,1400,40_0 P,X,Rhizosphere,1,14.3,2.047
+F10-6RRoot,F10,6R,Root,Rhizosphere,After,SPOD,2400,40_0 P,X,Rhizosphere,1,11,1.766
+F11-7RRoot,F11,7R,Root,Rhizosphere,After,ALF,2400,40_0 P,X,Rhizosphere,1,37.5,1.91
+F12-8RRoot,F12,8R,Root,Rhizosphere,After,SPOD,1400,40_0 P,X,Rhizosphere,1,9,2.22
+G1-9RRoot,G1,9R,Root,Rhizosphere,After,SPOD,1401,40_45 P,X,Rhizosphere,1,8,1.974
